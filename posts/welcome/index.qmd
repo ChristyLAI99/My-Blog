@@ -55,6 +55,8 @@ knitr::opts_chunk$set(
 
 library(tidyverse)
 library(kableExtra)
+library(ggplot2)
+library(plotly)
 ```
 
 To load the dataset from GitHub, use the following code:
@@ -65,6 +67,30 @@ coffee_survey <- readr::read_csv('https://raw.githubusercontent.com/rfordatascie
 ```
 
 You can use the following approach to clean the dataset and reproduce similar results:
+```{r echo=FALSE}
+# Define colors for coffees
+coffee_colors <- c(
+  "Coffee A" = "#8B4513",
+  "Coffee B" = "#D2B48C",
+  "Coffee C" = "#C19A6B",
+  "Coffee D" = "#4B3832")
+
+# Define colors for each gender
+colors <- c("Female" = "pink",
+            "Male" = "#87c6e8",
+            "Non-binary" = "#dda1e6",
+            "Other" = "#4dd6bb",
+            "Prefer not to say" = "grey")
+
+# Define custom colors for each brew method
+custom_colors <- c(
+  "Pour over" = "#4CAF50",
+  "Espresso" = "#2196F3",
+  "French press" = "#FF8C00",
+  "Other" = "#9C27B0",
+  "Coffee brewing machine" = "#FFC107",
+  "Cold brew" = "#00ACC1")
+```
 
 ```{r, echo=TRUE}
 # Code to clean the dataset
@@ -113,16 +139,20 @@ The first insight from the analysis focuses on coffee taste preferences. As show
 #| label: fig-bar1
 #| fig-cap: "Overall Perferences"
 
-ggplot(popularity, aes(x = prefer_overall, y = percentage, fill = prefer_overall)) +
-  geom_bar(stat = "identity") +
-  geom_text(aes(label = paste0(round(percentage, 1), "%")), 
-            position = position_stack(vjust = 0.5),
-            color = "white",
-            size = 5) +
-  labs(title = "Popularity of Coffee Types",
-       x = "Coffee Type",
-       y = "Percentage of Votes") +
-  theme_minimal()
+gg1 <- ggplot(popularity, aes(x = prefer_overall, y = percentage, fill = prefer_overall)) +
+      geom_bar(stat = "identity") +
+      labs(title = "Popularity of Coffee Types",
+           x = "Coffee Type",
+           y = "Percentage of Votes") +
+      scale_fill_manual(values = coffee_colors) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12)
+      )
+
+ggplotly(gg1)
 ```
 
 ### 2. Gender and Age Group Distribution
@@ -132,17 +162,20 @@ Next, we looked at the demographic breakdown of the participants to see how gend
 #| label: fig-bar2
 #| fig-cap: "Gender Distribution by Age Group"
 
-# Visualize the results
-ggplot(age_gender_distribution, aes(x = percentage, y = age, fill = gender)) +
-  geom_bar(stat = "identity", position = "stack") +
-  geom_text(aes(label = paste0(round(percentage, 1), "%")), 
-            position = position_stack(vjust = 0.5),
-            color = "white",
-            size = 4) +
-  labs(title = "Gender Distribution by Age Group",
-       x = "Percentage of Respondents",
-       y = "Age Group") +
-  theme_minimal()
+gg2 <- ggplot(age_gender_distribution, aes(x = percentage, y = age, fill = gender)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_manual(values = colors) +
+      labs(title = "Age Group Distribution by Gender",
+           x = "Percentage (%)",
+           y = "Age Group") +
+      theme_minimal() +
+   theme(
+     plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+     axis.title.x = element_text(size = 12),
+     axis.title.y = element_text(size = 12)
+   )
+
+ggplotly(gg2)
 ```
 
 ### 3. Where Consumers Drink Coffee
@@ -172,18 +205,29 @@ Brewing methods are critical to consumer experience, and our client will need to
 #| label: fig-bar4
 #| fig-cap: "How do you brew coffee at home?"
 
-# Visualize the results
-ggplot(brew_distribution, aes(x = percentage, y = reorder(brew, percentage), fill = brew)) +
-  geom_bar(stat = "identity") +
-  geom_text(aes(label = paste0(round(percentage, 1), "%")),
-            position = position_stack(vjust = 0.5),
-            color = "white",
-            size = 3)  +
-  labs(title = "How do you brew coffee at home?",
-       x = "Percentage of Respondents",
-       y = "Brewing Method") +
-  theme_minimal()
+gg3 <- brew_distribution %>%
+      as.data.frame() %>%
+      ggplot(aes(
+        x = fct_reorder(brew, -percentage),
+        y = percentage,
+        fill = brew
+      )) +
+      geom_col(color = "black") +
+      scale_fill_manual(values = custom_colors) +
+      theme_minimal() +
+      labs(
+        x = "Brewing Method",
+        y = "Percentage of Respondents",
+        title = "How do you brew coffee at home?"
+      )  +
+      theme(
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        legend.position = "none"
+      )
 
+ggplotly(gg3)
 
 ```
 
@@ -195,17 +239,24 @@ Finally, we analyzed how much participants are willing to spend on a cup of coff
 #| label: fig-bar5
 #| fig-cap: "What is the most you've ever paid for a cup of coffee?"
 
-# Visualize the results
-ggplot(most_paid_distribution, aes(x = percentage, y = reorder(most_paid, percentage), fill = most_paid)) +
-  geom_bar(stat = "identity") +
-  geom_text(aes(label = paste0(round(percentage, 1), "%")), 
-            position = position_stack(vjust = 0.5),
-            color = "white",
-            size = 3)   +
-  labs(title = "What is the most you've ever paid for a cup of coffee?",
-       x = "Percentage of Respondents",
-       y = "Maximum Amount Paid") +
-  theme_minimal()
+gg4 <- ggplot(most_paid_distribution,
+                 aes(x = percentage,
+                     y = reorder(most_paid, percentage),
+                     fill = most_paid)) +
+      geom_bar(stat = "identity", color = "black", fill = "#edc453") +
+      labs(title = "What is the Most You've Ever Paid for a Cup of Coffee?",
+           x = "Percentage of Respondents",
+           y = "Maximum Amount Paid") +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        legend.position = "none"
+      )
+
+ggplotly(gg4)
+
 ```
 
 ## Conclusion
@@ -229,6 +280,3 @@ Armed with these insights, our client can craft a unique brand that resonates wi
 Data Science Learning Community (2024). Tidy Tuesday: A weekly social data project. https://tidytues.day
 
 R, E. (2024, September 6). 8 countries that drink the most coffee each year. TheTravel. https://www.thetravel.com/countries-that-drink-most-coffee/
-
-
-
